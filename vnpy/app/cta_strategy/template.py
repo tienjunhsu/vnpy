@@ -22,11 +22,13 @@ class CtaTemplate(ABC):
         strategy_name: str,
         vt_symbol: str,
         setting: dict,
+        gateway_name: str = None
     ):
         """"""
         self.cta_engine = cta_engine
         self.strategy_name = strategy_name
         self.vt_symbol = vt_symbol
+        self.gateway_name = gateway_name
 
         self.inited = False
         self.trading = False

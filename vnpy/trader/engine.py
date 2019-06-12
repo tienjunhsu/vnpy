@@ -61,11 +61,14 @@ class MainEngine:
         self.engines[engine.engine_name] = engine
         return engine
 
-    def add_gateway(self, gateway_class: BaseGateway):
+    # # begin mod by hsu, support multi accounts use same gateway, add gateway_name para(actually account name )
+    def add_gateway(self, gateway_class: BaseGateway, gateway_name: str = None):
         """
         Add gateway.
         """
         gateway = gateway_class(self.event_engine)
+        if gateway_name is not None:
+            gateway.gateway_name = gateway_name
         self.gateways[gateway.gateway_name] = gateway
 
         # Add gateway supported exchanges into engine
@@ -74,6 +77,7 @@ class MainEngine:
                 self.exchanges.append(exchange)
 
         return gateway
+    # # end add by hsu
 
     def add_app(self, app_class: BaseApp):
         """

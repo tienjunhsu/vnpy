@@ -102,6 +102,24 @@ class CtaEngine(BaseEngine):
 
         self.offset_converter = OffsetConverter(self.main_engine)
 
+        # begin add by hsu
+        # Quote from ninverse gateway
+        self.quote_gateway_name = None
+        self.use_quote_gateway = False
+        # end add by hsu
+
+    # begin add by hsu
+    def set_quote_gateway_name(self, quote_gateway_name):
+        """
+         Quote from ninverse gateway
+        :param quote_gateway_name:
+        :return:
+        """
+        if quote_gateway_name is not None:
+            self.quote_gateway_name = quote_gateway_name
+            self.use_quote_gateway = True
+    # end add by hsu
+
     def init_engine(self):
         """
         """
@@ -314,9 +332,15 @@ class CtaEngine(BaseEngine):
         # Send Orders
         vt_orderids = []
 
+        # begin add by hsu, support multi account use same gateway
+        gateway_name = strategy.gateway_name
+        if gateway_name is None:
+            gateway_name = contract.gateway_name
+        # end by hsu
+
         for req in req_list:
             vt_orderid = self.main_engine.send_order(
-                req, contract.gateway_name)
+                req, gateway_name)
             vt_orderids.append(vt_orderid)
 
             self.offset_converter.update_order_request(req, vt_orderid)
@@ -562,7 +586,7 @@ class CtaEngine(BaseEngine):
             self.write_log(msg, strategy)
 
     def add_strategy(
-        self, class_name: str, strategy_name: str, vt_symbol: str, setting: dict
+        self, class_name: str, strategy_name: str, vt_symbol: str, setting: dict, gateway_name: str = None
     ):
         """
         Add a new strategy.
@@ -573,7 +597,7 @@ class CtaEngine(BaseEngine):
 
         strategy_class = self.classes[class_name]
 
-        strategy = strategy_class(self, strategy_name, vt_symbol, setting)
+        strategy = strategy_class(self, strategy_name, vt_symbol, setting, gateway_name)
         self.strategies[strategy_name] = strategy
 
         # Add vt_symbol to strategy map.
@@ -625,7 +649,13 @@ class CtaEngine(BaseEngine):
             if contract:
                 req = SubscribeRequest(
                     symbol=contract.symbol, exchange=contract.exchange)
-                self.main_engine.subscribe(req, contract.gateway_name)
+                # # mod by hsu
+                # # subscribe quote from universe gateway
+                if self.use_quote_gateway:
+                    self.main_engine.subscribe(req, self.quote_gateway_name)
+                else:
+                    self.main_engine.subscribe(req, contract.gateway_name)
+                # # end mod by hsu
             else:
                 self.write_log(f"行情订阅失败，找不到合约{strategy.vt_symbol}", strategy)
 
@@ -818,12 +848,47 @@ class CtaEngine(BaseEngine):
         self.strategy_setting = load_json(self.setting_filename)
 
         for strategy_name, strategy_config in self.strategy_setting.items():
-            self.add_strategy(
-                strategy_config["class_name"], 
-                strategy_name,
-                strategy_config["vt_symbol"], 
-                strategy_config["setting"]
-            )
+            if "gateway_name" in strategy_config:
+                self.add_strategy(
+                    strategy_config["class_name"],
+                    strategy_name,
+                    strategy_config["vt_symbol"],
+                    strategy_config["setting"],
+                    strategy_config["gateway_name"]
+                )
+            else:
+                self.add_strategy(
+                    strategy_config["class_name"],
+                    strategy_name,
+                    strategy_config["vt_symbol"],
+                    strategy_config["setting"]
+                )
+
+    # # begin add by hsu
+    # # For injection strategies
+    def from_strategy_setting(self, strategy_setting):
+        # injection strategy setting
+
+        self.strategy_setting = strategy_setting
+
+        for strategy_name, strategy_config in self.strategy_setting.items():
+            if "gateway_name" in strategy_config:
+                self.add_strategy(
+                    strategy_config["class_name"],
+                    strategy_name,
+                    strategy_config["vt_symbol"],
+                    strategy_config["setting"],
+                    strategy_config["gateway_name"]
+                )
+            else:
+                self.add_strategy(
+                    strategy_config["class_name"],
+                    strategy_name,
+                    strategy_config["vt_symbol"],
+                    strategy_config["setting"]
+                )
+
+    # # end add by hsu
 
     def update_strategy_setting(self, strategy_name: str, setting: dict):
         """
