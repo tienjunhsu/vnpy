@@ -32,10 +32,10 @@ class KingKeltnerStrategy(CtaTemplate):
     parameters = ['kk_length', 'kk_dev', 'fixed_size']
     variables = ['kk_up', 'kk_down']
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(KingKeltnerStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.bg = BarGenerator(self.on_bar, 5, self.on_5min_bar)

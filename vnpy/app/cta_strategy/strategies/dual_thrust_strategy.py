@@ -37,10 +37,10 @@ class DualThrustStrategy(CtaTemplate):
     parameters = ["k1", "k2", "fixed_size"]
     variables = ["range", "long_entry", "short_entry", "exit_time"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(DualThrustStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.bg = BarGenerator(self.on_bar)

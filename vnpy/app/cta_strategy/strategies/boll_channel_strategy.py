@@ -37,10 +37,10 @@ class BollChannelStrategy(CtaTemplate):
     variables = ["boll_up", "boll_down", "cci_value", "atr_value",
                  "intra_trade_high", "intra_trade_low", "long_stop", "short_stop"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(BollChannelStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.bg = BarGenerator(self.on_bar, 15, self.on_15min_bar)

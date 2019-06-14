@@ -22,10 +22,10 @@ class TestStrategy(CtaTemplate):
     parameters = ["test_trigger"]
     variables = ["tick_count", "test_all_done"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(TestStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.test_funcs = [

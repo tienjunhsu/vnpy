@@ -85,6 +85,7 @@ class CtaTemplate(ABC):
             "vt_symbol": self.vt_symbol,
             "class_name": self.__class__.__name__,
             "author": self.author,
+            "gateway_name": self.gateway_name,
             "parameters": self.get_parameters(),
             "variables": self.get_variables(),
         }

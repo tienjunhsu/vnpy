@@ -34,10 +34,10 @@ class AtrRsiStrategy(CtaTemplate):
                   "rsi_entry", "trailing_percent", "fixed_size"]
     variables = ["atr_value", "atr_ma", "rsi_value", "rsi_buy", "rsi_sell"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(AtrRsiStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
         self.bg = BarGenerator(self.on_bar)
         self.am = ArrayManager()

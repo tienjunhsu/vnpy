@@ -47,6 +47,9 @@ class CtaManager(QtWidgets.QWidget):
         add_button = QtWidgets.QPushButton("添加策略")
         add_button.clicked.connect(self.add_strategy)
 
+        quote_button = QtWidgets.QPushButton("使用独立股票行情")
+        quote_button.clicked.connect(self.set_quote_gateway)
+
         init_button = QtWidgets.QPushButton("全部初始化")
         init_button.clicked.connect(self.cta_engine.init_all_strategies)
 
@@ -77,6 +80,7 @@ class CtaManager(QtWidgets.QWidget):
         hbox1.addWidget(self.class_combo)
         hbox1.addWidget(add_button)
         hbox1.addStretch()
+        hbox1.addWidget(quote_button)
         hbox1.addWidget(init_button)
         hbox1.addWidget(start_button)
         hbox1.addWidget(stop_button)
@@ -91,6 +95,10 @@ class CtaManager(QtWidgets.QWidget):
         vbox.addLayout(grid)
 
         self.setLayout(vbox)
+
+    def set_quote_gateway(self):
+        # set stock universe quote gateway
+        self.cta_engine.set_quote_gateway_name('quote')
 
     def update_class_combo(self):
         """"""
@@ -140,9 +148,10 @@ class CtaManager(QtWidgets.QWidget):
             setting = editor.get_setting()
             vt_symbol = setting.pop("vt_symbol")
             strategy_name = setting.pop("strategy_name")
+            gateway_name = setting.pop("gateway_name")
 
             self.cta_engine.add_strategy(
-                class_name, strategy_name, vt_symbol, setting
+                class_name, strategy_name, vt_symbol, setting, gateway_name
             )
 
     def show(self):
@@ -387,7 +396,7 @@ class SettingEditor(QtWidgets.QDialog):
         if self.class_name:
             self.setWindowTitle(f"添加策略：{self.class_name}")
             button_text = "添加"
-            parameters = {"strategy_name": "", "vt_symbol": ""}
+            parameters = {"strategy_name": "", "vt_symbol": "", "gateway_name": ""}
             parameters.update(self.parameters)
         else:
             self.setWindowTitle(f"参数编辑：{self.strategy_name}")

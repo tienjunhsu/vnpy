@@ -136,9 +136,9 @@ class CtpGateway(BaseGateway):
 
     exchanges = list(EXCHANGE_CTP2VT.values())
     
-    def __init__(self, event_engine):
+    def __init__(self, event_engine, gateway_name: str = 'CTP'):
         """Constructor"""
-        super(CtpGateway, self).__init__(event_engine, "CTP")
+        super(CtpGateway, self).__init__(event_engine, gateway_name)
 
         self.td_api = CtpTdApi(self)
         self.md_api = CtpMdApi(self)

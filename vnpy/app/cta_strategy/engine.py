@@ -118,6 +118,7 @@ class CtaEngine(BaseEngine):
         if quote_gateway_name is not None:
             self.quote_gateway_name = quote_gateway_name
             self.use_quote_gateway = True
+            self.write_log(u'CTA引擎已设置为使用独立行情 %s ' % quote_gateway_name)
     # end add by hsu
 
     def init_engine(self):

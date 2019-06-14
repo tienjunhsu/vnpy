@@ -34,10 +34,10 @@ class MultiTimeframeStrategy(CtaTemplate):
     variables = ["rsi_value", "rsi_long", "rsi_short",
                  "fast_ma", "slow_ma", "ma_trend"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(MultiTimeframeStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.rsi_long = 50 + self.rsi_signal

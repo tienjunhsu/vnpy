@@ -66,9 +66,10 @@ class MainEngine:
         """
         Add gateway.
         """
-        gateway = gateway_class(self.event_engine)
         if gateway_name is not None:
-            gateway.gateway_name = gateway_name
+            gateway = gateway_class(self.event_engine, gateway_name)
+        else:
+            gateway = gateway_class(self.event_engine)
         self.gateways[gateway.gateway_name] = gateway
 
         # Add gateway supported exchanges into engine

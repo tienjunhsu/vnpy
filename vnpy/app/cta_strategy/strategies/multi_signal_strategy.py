@@ -149,10 +149,10 @@ class MultiSignalStrategy(TargetPosTemplate):
                   "cci_level", "fast_window", "slow_window"]
     variables = ["signal_pos", "target_pos"]
 
-    def __init__(self, cta_engine, strategy_name, vt_symbol, setting):
+    def __init__(self, cta_engine, strategy_name, vt_symbol, setting, gateway_name=None):
         """"""
         super(MultiSignalStrategy, self).__init__(
-            cta_engine, strategy_name, vt_symbol, setting
+            cta_engine, strategy_name, vt_symbol, setting, gateway_name
         )
 
         self.rsi_signal = RsiSignal(self.rsi_window, self.rsi_level)
