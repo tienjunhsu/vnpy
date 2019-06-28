@@ -7,20 +7,20 @@ from vnpy.trader.constant import (Direction, Offset, OrderType)
 from vnpy.trader.object import (SubscribeRequest, OrderRequest)
 from vnpy.trader.utility import load_json, save_json, round_to
 
-from .template import AlgoTemplate
+from .template import PtfloTemplate
 
 
-APP_NAME = "AlgoTrading"
+APP_NAME = "PtfloTrading"
 
-EVENT_ALGO_LOG = "eAlgoLog"
-EVENT_ALGO_SETTING = "eAlgoSetting"
-EVENT_ALGO_VARIABLES = "eAlgoVariables"
-EVENT_ALGO_PARAMETERS = "eAlgoParameters"
+EVENT_ALGO_LOG = "ePtfloLog"
+EVENT_ALGO_SETTING = "ePtfloSetting"
+EVENT_ALGO_VARIABLES = "ePtfloVariables"
+EVENT_ALGO_PARAMETERS = "ePtfloParameters"
 
 
-class AlgoEngine(BaseEngine):
+class PtfloEngine(BaseEngine):
     """"""
-    setting_filename = "algo_trading_setting.json"
+    setting_filename = "ptflo_trading_setting.json"
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """Constructor"""
@@ -52,9 +52,9 @@ class AlgoEngine(BaseEngine):
         if quote_gateway_name is not None:
             self.quote_gateway_name = quote_gateway_name
             self.use_quote_gateway = True
-            self.write_log(u'算法交易引擎已设置为使用独立行情 %s ' % quote_gateway_name)
+            self.write_log(u'篮子交易引擎已设置为使用独立行情 %s ' % quote_gateway_name)
 
-    def get_position(self, strategy: AlgoTemplate, vt_symbol):
+    def get_position(self, strategy: PtfloTemplate, vt_symbol):
         """
         Get latest position data by vt_positionid.
         """
@@ -62,14 +62,14 @@ class AlgoEngine(BaseEngine):
             self.write_log(u'没有设置gateway_name, 不能查询账户信息', strategy)
             return None
         positions = []
-        for side in [Direction.LONG,Direction.SHORT]:
+        for side in [Direction.LONG, Direction.SHORT]:
             vt_positionid = f"{strategy.gateway_name}.{vt_symbol}.{side}"
             position_data = self.main_engine.get_position(vt_positionid)
             if position_data is not None:
                 positions.append(position_data)
         return positions
 
-    def get_account(self, strategy: AlgoTemplate):
+    def get_account(self, strategy: PtfloTemplate):
         """
         Get latest account data by vt_accountid.
         """
@@ -78,34 +78,21 @@ class AlgoEngine(BaseEngine):
             return None
         vt_accountid = strategy.gateway_name
         return self.main_engine.get_account(vt_accountid)
+
     # end add by hsu
 
     def init_engine(self):
         """"""
-        self.write_log("算法交易引擎启动")
+        self.write_log("篮子交易引擎启动")
         self.load_algo_setting()
 
     def load_algo_template(self):
         """"""
-        from .algos.twap_algo import TwapAlgo
-        from .algos.iceberg_algo import IcebergAlgo
-        from .algos.sniper_algo import SniperAlgo
-        from .algos.stop_algo import StopAlgo
-        from .algos.best_limit_algo import BestLimitAlgo
-        from .algos.grid_algo import GridAlgo
-        from .algos.dma_algo import DmaAlgo
-        from .algos.arbitrage_algo import ArbitrageAlgo
+        from .algos.test_algo import TestAlgo
 
-        self.add_algo_template(TwapAlgo)
-        self.add_algo_template(IcebergAlgo)
-        self.add_algo_template(SniperAlgo)
-        self.add_algo_template(StopAlgo)
-        self.add_algo_template(BestLimitAlgo)
-        self.add_algo_template(GridAlgo)
-        self.add_algo_template(DmaAlgo)
-        self.add_algo_template(ArbitrageAlgo)
+        self.add_algo_template(TestAlgo)
 
-    def add_algo_template(self, template: AlgoTemplate):
+    def add_algo_template(self, template: PtfloTemplate):
         """"""
         self.algo_templates[template.__name__] = template
 
@@ -116,7 +103,7 @@ class AlgoEngine(BaseEngine):
         for setting_name, setting in self.algo_settings.items():
             self.put_setting_event(setting_name, setting)
 
-        self.write_log("算法配置载入成功")
+        self.write_log("篮子交易配置载入成功")
 
     def save_algo_setting(self):
         """"""
@@ -182,33 +169,34 @@ class AlgoEngine(BaseEngine):
         for algo_name in list(self.algos.keys()):
             self.stop_algo(algo_name)
 
-    def subscribe(self, algo: AlgoTemplate, vt_symbol: str):
+    def subscribe(self, algo: PtfloTemplate, vt_symbol_list: list):
         """"""
-        contract = self.main_engine.get_contract(vt_symbol)
-        if not contract:
-            self.write_log(f'订阅行情失败，找不到合约：{vt_symbol}', algo)
-            return
+        for vt_symbol in vt_symbol_list:
+            contract = self.main_engine.get_contract(vt_symbol)
+            if not contract:
+                self.write_log(f'订阅行情失败，找不到合约：{vt_symbol}', algo)
+                return
 
-        algos = self.symbol_algo_map.setdefault(vt_symbol, set())
+            algos = self.symbol_algo_map.setdefault(vt_symbol, set())
 
-        if not algos:
-            req = SubscribeRequest(
-                symbol=contract.symbol,
-                exchange=contract.exchange
-            )
-            # # mod by hsu
-            # # subscribe quote from universe gateway
-            if self.use_quote_gateway:
-                self.main_engine.subscribe(req, self.quote_gateway_name)
-            else:
-                self.main_engine.subscribe(req, contract.gateway_name)
-            # # end mod by hsu
+            if not algos:
+                req = SubscribeRequest(
+                    symbol=contract.symbol,
+                    exchange=contract.exchange
+                )
+                # # mod by hsu
+                # # subscribe quote from universe gateway
+                if self.use_quote_gateway:
+                    self.main_engine.subscribe(req, self.quote_gateway_name)
+                else:
+                    self.main_engine.subscribe(req, contract.gateway_name)
+                # # end mod by hsu
 
-        algos.add(algo)
+            algos.add(algo)
 
     def send_order(
         self,
-        algo: AlgoTemplate,
+        algo: PtfloTemplate,
         vt_symbol: str,
         direction: Direction,
         price: float,
@@ -248,7 +236,7 @@ class AlgoEngine(BaseEngine):
         self.orderid_algo_map[vt_orderid] = algo
         return vt_orderid
 
-    def cancel_order(self, algo: AlgoTemplate, vt_orderid: str):
+    def cancel_order(self, algo: PtfloTemplate, vt_orderid: str):
         """"""
         order = self.main_engine.get_order(vt_orderid)
 
@@ -259,7 +247,7 @@ class AlgoEngine(BaseEngine):
         req = order.create_cancel_request()
         self.main_engine.cancel_order(req, order.gateway_name)
 
-    def get_tick(self, algo: AlgoTemplate, vt_symbol: str):
+    def get_tick(self, algo: PtfloTemplate, vt_symbol: str):
         """"""
         tick = self.main_engine.get_tick(vt_symbol)
 
@@ -268,7 +256,7 @@ class AlgoEngine(BaseEngine):
 
         return tick
 
-    def get_contract(self, algo: AlgoTemplate, vt_symbol: str):
+    def get_contract(self, algo: PtfloTemplate, vt_symbol: str):
         """"""
         contract = self.main_engine.get_contract(vt_symbol)
 
@@ -277,7 +265,7 @@ class AlgoEngine(BaseEngine):
 
         return contract
 
-    def write_log(self, msg: str, algo: AlgoTemplate = None):
+    def write_log(self, msg: str, algo: PtfloTemplate = None):
         """"""
         if algo:
             msg = f"{algo.algo_name}：{msg}"
@@ -318,7 +306,7 @@ class AlgoEngine(BaseEngine):
 
         self.save_algo_setting()
 
-    def put_parameters_event(self, algo: AlgoTemplate, parameters: dict):
+    def put_parameters_event(self, algo: PtfloTemplate, parameters: dict):
         """"""
         event = Event(EVENT_ALGO_PARAMETERS)
         event.data = {
@@ -327,7 +315,7 @@ class AlgoEngine(BaseEngine):
         }
         self.event_engine.put(event)
 
-    def put_variables_event(self, algo: AlgoTemplate, variables: dict):
+    def put_variables_event(self, algo: PtfloTemplate, variables: dict):
         """"""
         event = Event(EVENT_ALGO_VARIABLES)
         event.data = {

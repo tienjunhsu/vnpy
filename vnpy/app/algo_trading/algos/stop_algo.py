@@ -5,17 +5,18 @@ from vnpy.trader.engine import BaseEngine
 from vnpy.app.algo_trading import AlgoTemplate
 
 
-class SniperAlgo(AlgoTemplate):
+class StopAlgo(AlgoTemplate):
     """"""
 
-    display_name = "Sniper 狙击手"
+    display_name = "Stop 条件委托"
 
     default_setting = {
         "vt_symbol": "",
         "gateway_name": "",
         "direction": [Direction.LONG.value, Direction.SHORT.value],
-        "price": 0.0,
+        "stop_price": 0.0,
         "volume": 0.0,
+        "price_add": 0.0,
         "offset": [
             Offset.NONE.value,
             Offset.OPEN.value,
@@ -27,7 +28,8 @@ class SniperAlgo(AlgoTemplate):
 
     variables = [
         "traded",
-        "vt_orderid"
+        "vt_orderid",
+        "order_status",
     ]
 
     def __init__(
@@ -35,7 +37,7 @@ class SniperAlgo(AlgoTemplate):
         algo_engine: BaseEngine,
         algo_name: str,
         setting: dict,
-        gateway_name: str = None
+        gateway_name=None
     ):
         """"""
         super().__init__(algo_engine, algo_name, setting, gateway_name)
@@ -43,13 +45,15 @@ class SniperAlgo(AlgoTemplate):
         # Parameters
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
-        self.price = setting["price"]
+        self.stop_price = setting["stop_price"]
         self.volume = setting["volume"]
+        self.price_add = setting["price_add"]
         self.offset = Offset(setting["offset"])
 
         # Variables
         self.vt_orderid = ""
         self.traded = 0
+        self.order_status = ""
 
         self.subscribe(self.vt_symbol)
         self.put_parameters_event()
@@ -58,46 +62,51 @@ class SniperAlgo(AlgoTemplate):
     def on_tick(self, tick: TickData):
         """"""
         if self.vt_orderid:
-            self.cancel_all()
             return
 
         if self.direction == Direction.LONG:
-            if tick.ask_price_1 <= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.ask_volume_1)
+            if tick.last_price >= self.stop_price:
+                price = self.stop_price + self.price_add
+
+                if tick.limit_up:
+                    price = min(price, tick.limit_up)
 
                 self.vt_orderid = self.buy(
                     self.vt_symbol,
-                    self.price,
-                    order_volume,
+                    price,
+                    self.volume,
                     offset=self.offset
                 )
+                self.write_log(
+                    f"停止单已触发，代码：{self.vt_symbol}，方向：{self.direction}, 价格：{self.stop_price}，数量：{self.volume}，开平：{self.offset}")
+
         else:
-            if tick.bid_price_1 >= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.bid_volume_1)
+            if tick.last_price <= self.stop_price:
+                price = self.stop_price - self.price_add
+
+                if tick.limit_down:
+                    price = max(price, tick.limit_down)
 
                 self.vt_orderid = self.sell(
                     self.vt_symbol,
-                    self.price,
-                    order_volume,
+                    price,
+                    self.volume,
                     offset=self.offset
                 )
+                self.write_log(
+                    f"停止单已触发，代码：{self.vt_symbol}，方向：{self.direction}, 价格：{self.stop_price}，数量：{self.volume}，开平：{self.offset}")
 
         self.put_variables_event()
 
     def on_order(self, order: OrderData):
         """"""
+        self.traded = order.traded
+        self.order_status = order.status
+
         if not order.is_active():
-            self.vt_orderid = ""
-            self.put_variables_event()
+            self.stop()
+        self.put_variables_event()
 
     def on_trade(self, trade: TradeData):
         """"""
-        self.traded += trade.volume
-
-        if self.traded >= self.volume:
-            self.write_log(f"已交易数量：{self.traded}，总数量：{self.volume}")
-            self.stop()
-        else:
-            self.put_variables_event()
+        pass

@@ -259,6 +259,14 @@ class CtaTemplate(ABC):
         if self.trading:
             self.cta_engine.sync_strategy_data(self)
 
+    # # begin add by hsu
+    def get_position(self):
+        return self.cta_engine.get_position(self)
+
+    def get_account(self):
+        return self.cta_engine.get_account(self)
+    # # end add by hsu
+
 
 class CtaSignal(ABC):
     """"""

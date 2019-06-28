@@ -10,8 +10,8 @@ from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import QtWidgets, QtCore
 
 from ..engine import (
-    AlgoEngine,
-    AlgoTemplate,
+    PtfloEngine,
+    PtfloTemplate,
     APP_NAME,
     EVENT_ALGO_LOG,
     EVENT_ALGO_PARAMETERS,
@@ -21,15 +21,15 @@ from ..engine import (
 from .display import NAME_DISPLAY_MAP
 
 
-class AlgoWidget(QtWidgets.QWidget):
+class PtfloWidget(QtWidgets.QWidget):
     """
     Start connection of a certain gateway.
     """
 
     def __init__(
         self,
-        algo_engine: AlgoEngine,
-        algo_template: AlgoTemplate
+        algo_engine: PtfloEngine,
+        algo_template: PtfloTemplate
     ):
         """"""
         super().__init__()
@@ -64,7 +64,7 @@ class AlgoWidget(QtWidgets.QWidget):
             form.addRow(display_name, widget)
             self.widgets[field_name] = (widget, field_type)
 
-        start_algo_button = QtWidgets.QPushButton("启动算法")
+        start_algo_button = QtWidgets.QPushButton("启动篮子交易")
         start_algo_button.clicked.connect(self.start_algo)
         form.addRow(start_algo_button)
 
@@ -150,14 +150,14 @@ class AlgoWidget(QtWidgets.QWidget):
             self.algo_engine.update_algo_setting(setting_name, setting)
 
 
-class AlgoMonitor(QtWidgets.QTableWidget):
+class PtfloMonitor(QtWidgets.QTableWidget):
     """"""
     parameters_signal = QtCore.pyqtSignal(Event)
     variables_signal = QtCore.pyqtSignal(Event)
 
     def __init__(
         self,
-        algo_engine: AlgoEngine,
+        algo_engine: PtfloEngine,
         event_engine: EventEngine,
         mode_active: bool
     ):
@@ -177,7 +177,7 @@ class AlgoMonitor(QtWidgets.QTableWidget):
         """"""
         labels = [
             "",
-            "算法",
+            "交易计划",
             "参数",
             "状态"
         ]
@@ -278,22 +278,22 @@ class AlgoMonitor(QtWidgets.QTableWidget):
         return cells
 
 
-class ActiveAlgoMonitor(AlgoMonitor):
+class ActivePtfloMonitor(PtfloMonitor):
     """
     Monitor for active algos.
     """
 
-    def __init__(self, algo_engine: AlgoEngine, event_engine: EventEngine):
+    def __init__(self, algo_engine: PtfloEngine, event_engine: EventEngine):
         """"""
         super().__init__(algo_engine, event_engine, True)
 
 
-class InactiveAlgoMonitor(AlgoMonitor):
+class InactivePtfloMonitor(PtfloMonitor):
     """
     Monitor for inactive algos.
     """
 
-    def __init__(self, algo_engine: AlgoEngine, event_engine: EventEngine):
+    def __init__(self, algo_engine: PtfloEngine, event_engine: EventEngine):
         """"""
         super().__init__(algo_engine, event_engine, False)
 
@@ -303,7 +303,7 @@ class SettingMonitor(QtWidgets.QTableWidget):
     setting_signal = QtCore.pyqtSignal(Event)
     use_signal = QtCore.pyqtSignal(dict)
 
-    def __init__(self, algo_engine: AlgoEngine, event_engine: EventEngine):
+    def __init__(self, algo_engine: PtfloEngine, event_engine: EventEngine):
         """"""
         super().__init__()
 
@@ -461,7 +461,7 @@ class LogMonitor(QtWidgets.QTableWidget):
         self.setItem(0, 1, msg_cell)
 
 
-class AlgoManager(QtWidgets.QWidget):
+class PtfloManager(QtWidgets.QWidget):
     """"""
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
@@ -479,14 +479,14 @@ class AlgoManager(QtWidgets.QWidget):
 
     def init_ui(self):
         """"""
-        self.setWindowTitle("算法交易")
+        self.setWindowTitle("篮子交易")
 
         # Left side control widgets
         self.template_combo = QtWidgets.QComboBox()
         self.template_combo.currentIndexChanged.connect(self.show_algo_widget)
 
         form = QtWidgets.QFormLayout()
-        form.addRow("算法", self.template_combo)
+        form.addRow("交易计划", self.template_combo)
         widget = QtWidgets.QWidget()
         widget.setLayout(form)
 
@@ -494,7 +494,7 @@ class AlgoManager(QtWidgets.QWidget):
         vbox.addWidget(widget)
 
         for algo_template in self.algo_engine.algo_templates.values():
-            widget = AlgoWidget(self.algo_engine, algo_template)
+            widget = PtfloWidget(self.algo_engine, algo_template)
             vbox.addWidget(widget)
 
             template_name = algo_template.__name__
@@ -512,10 +512,10 @@ class AlgoManager(QtWidgets.QWidget):
         vbox.addWidget(stop_all_button)
 
         # Right side monitor widgets
-        active_algo_monitor = ActiveAlgoMonitor(
+        active_algo_monitor = ActivePtfloMonitor(
             self.algo_engine, self.event_engine
         )
-        inactive_algo_monitor = InactiveAlgoMonitor(
+        inactive_algo_monitor = InactivePtfloMonitor(
             self.algo_engine, self.event_engine
         )
         tab1 = QtWidgets.QTabWidget()

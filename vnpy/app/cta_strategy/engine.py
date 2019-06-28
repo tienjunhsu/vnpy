@@ -119,6 +119,31 @@ class CtaEngine(BaseEngine):
             self.quote_gateway_name = quote_gateway_name
             self.use_quote_gateway = True
             self.write_log(u'CTA引擎已设置为使用独立行情 %s ' % quote_gateway_name)
+
+    def get_position(self, strategy: CtaTemplate):
+        """
+        Get latest position data by vt_positionid.
+        """
+        if strategy.gateway_name is None:
+            self.write_log(u'没有设置gateway_name, 不能查询账户信息', strategy)
+            return None
+        positions = []
+        for side in [Direction.LONG,Direction.SHORT]:
+            vt_positionid = f"{strategy.gateway_name}.{strategy.vt_symbol}.{side}"
+            position_data = self.main_engine.get_position(vt_positionid)
+            if position_data is not None:
+                positions.append(position_data)
+        return positions
+
+    def get_account(self, strategy: CtaTemplate):
+        """
+        Get latest account data by vt_accountid.
+        """
+        if strategy.gateway_name is None:
+            self.write_log(u'没有设置gateway_name, 不能查询账户信息', strategy)
+            return None
+        vt_accountid = strategy.gateway_name
+        return self.main_engine.get_account(vt_accountid)
     # end add by hsu
 
     def init_engine(self):
@@ -900,6 +925,7 @@ class CtaEngine(BaseEngine):
         self.strategy_setting[strategy_name] = {
             "class_name": strategy.__class__.__name__,
             "vt_symbol": strategy.vt_symbol,
+            "gateway_name": strategy.gateway_name,
             "setting": setting,
         }
         save_json(self.setting_filename, self.strategy_setting)

@@ -5,16 +5,15 @@ from vnpy.trader.engine import BaseEngine
 from vnpy.app.algo_trading import AlgoTemplate
 
 
-class SniperAlgo(AlgoTemplate):
+class BestLimitAlgo(AlgoTemplate):
     """"""
 
-    display_name = "Sniper 狙击手"
+    display_name = "BestLimit 最优限价"
 
     default_setting = {
-        "vt_symbol": "",
         "gateway_name": "",
+        "vt_symbol": "",
         "direction": [Direction.LONG.value, Direction.SHORT.value],
-        "price": 0.0,
         "volume": 0.0,
         "offset": [
             Offset.NONE.value,
@@ -27,7 +26,9 @@ class SniperAlgo(AlgoTemplate):
 
     variables = [
         "traded",
-        "vt_orderid"
+        "vt_orderid",
+        "order_price",
+        "last_tick",
     ]
 
     def __init__(
@@ -35,7 +36,7 @@ class SniperAlgo(AlgoTemplate):
         algo_engine: BaseEngine,
         algo_name: str,
         setting: dict,
-        gateway_name: str = None
+        gateway_name=None
     ):
         """"""
         super().__init__(algo_engine, algo_name, setting, gateway_name)
@@ -43,13 +44,14 @@ class SniperAlgo(AlgoTemplate):
         # Parameters
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
-        self.price = setting["price"]
         self.volume = setting["volume"]
         self.offset = Offset(setting["offset"])
 
         # Variables
         self.vt_orderid = ""
         self.traded = 0
+        self.last_tick = None
+        self.order_price = 0
 
         self.subscribe(self.vt_symbol)
         self.put_parameters_event()
@@ -57,40 +59,20 @@ class SniperAlgo(AlgoTemplate):
 
     def on_tick(self, tick: TickData):
         """"""
-        if self.vt_orderid:
-            self.cancel_all()
-            return
+        self.last_tick = tick
 
         if self.direction == Direction.LONG:
-            if tick.ask_price_1 <= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.ask_volume_1)
-
-                self.vt_orderid = self.buy(
-                    self.vt_symbol,
-                    self.price,
-                    order_volume,
-                    offset=self.offset
-                )
+            if not self.vt_orderid:
+                self.buy_best_limit()
+            elif self.order_price != self.last_tick.bid_price_1:
+                self.cancel_all()
         else:
-            if tick.bid_price_1 >= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.bid_volume_1)
-
-                self.vt_orderid = self.sell(
-                    self.vt_symbol,
-                    self.price,
-                    order_volume,
-                    offset=self.offset
-                )
+            if not self.vt_orderid:
+                self.sell_best_limit()
+            elif self.order_price != self.last_tick.ask_price_1:
+                self.cancel_all()
 
         self.put_variables_event()
-
-    def on_order(self, order: OrderData):
-        """"""
-        if not order.is_active():
-            self.vt_orderid = ""
-            self.put_variables_event()
 
     def on_trade(self, trade: TradeData):
         """"""
@@ -101,3 +83,32 @@ class SniperAlgo(AlgoTemplate):
             self.stop()
         else:
             self.put_variables_event()
+
+    def on_order(self, order: OrderData):
+        """"""
+        if not order.is_active():
+            self.vt_orderid = ""
+            self.order_price = 0
+            self.put_variables_event()
+
+    def buy_best_limit(self):
+        """"""
+        order_volume = self.volume - self.traded
+        self.order_price = self.last_tick.bid_price_1
+        self.vt_orderid = self.buy(
+            self.vt_symbol,
+            self.order_price,
+            order_volume,
+            offset=self.offset
+        )
+
+    def sell_best_limit(self):
+        """"""
+        order_volume = self.volume - self.traded
+        self.order_price = self.last_tick.ask_price_1
+        self.vt_orderid = self.sell(
+            self.vt_symbol,
+            self.order_price,
+            order_volume,
+            offset=self.offset
+        )

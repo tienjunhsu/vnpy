@@ -13,5 +13,9 @@ NAME_DISPLAY_MAP = {
     "timer_count": "本轮读秒",
     "total_count": "累计读秒",
     "template_name": "算法模板",
-    "display_volume": "挂出数量"
+    "display_volume": "挂出数量",
+    "str_vt_symbol_list": "代码列表",
+    "str_price_list": "价格列表",
+    "str_volume_list": "数量列表",
+    "algo_name": "任务名称",
 }

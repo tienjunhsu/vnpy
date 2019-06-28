@@ -12,6 +12,7 @@ class IcebergAlgo(AlgoTemplate):
 
     default_setting = {
         "vt_symbol": "",
+        "gateway_name": "",
         "direction": [Direction.LONG.value, Direction.SHORT.value],
         "price": 0.0,
         "volume": 0.0,
@@ -36,10 +37,11 @@ class IcebergAlgo(AlgoTemplate):
         self,
         algo_engine: BaseEngine,
         algo_name: str,
-        setting: dict
+        setting: dict,
+        gateway_name: str = None
     ):
         """"""
-        super().__init__(algo_engine, algo_name, setting)
+        super().__init__(algo_engine, algo_name, setting, gateway_name)
 
         # Parameters
         self.vt_symbol = setting["vt_symbol"]

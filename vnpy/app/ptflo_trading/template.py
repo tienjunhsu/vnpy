@@ -4,7 +4,7 @@ from vnpy.trader.constant import OrderType, Offset, Direction
 from vnpy.trader.utility import virtual
 
 
-class AlgoTemplate:
+class PtfloTemplate:
     """"""
 
     _count = 0
@@ -33,11 +33,16 @@ class AlgoTemplate:
     def new(cls, algo_engine: BaseEngine, setting: dict):
         """Create new algo instance"""
         cls._count += 1
-        algo_name = f"{cls.__name__}_{cls._count}"
+
         if 'gateway_name' in setting:
             gateway_name = setting['gateway_name']
         else:
             gateway_name = None
+
+        if 'algo_name' in setting:
+            algo_name = setting['algo_name']
+        else:
+            algo_name = f"{cls.__name__}_{cls._count}"
         algo = cls(algo_engine, algo_name, setting, gateway_name)
         return algo
 
@@ -108,11 +113,11 @@ class AlgoTemplate:
         self.on_stop()
         self.put_variables_event()
 
-        self.write_log("停止算法")
+        self.write_log("停止篮子交易")
 
-    def subscribe(self, vt_symbol):
+    def subscribe(self, vt_symbol_list):
         """"""
-        self.algo_engine.subscribe(self, vt_symbol)
+        self.algo_engine.subscribe(self, vt_symbol_list)
 
     def buy(
         self,

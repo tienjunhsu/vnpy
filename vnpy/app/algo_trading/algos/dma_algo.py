@@ -1,19 +1,26 @@
-from vnpy.trader.constant import Offset, Direction
+from vnpy.trader.constant import Offset, Direction, OrderType
 from vnpy.trader.object import TradeData, OrderData, TickData
 from vnpy.trader.engine import BaseEngine
 
 from vnpy.app.algo_trading import AlgoTemplate
 
 
-class SniperAlgo(AlgoTemplate):
+class DmaAlgo(AlgoTemplate):
     """"""
 
-    display_name = "Sniper 狙击手"
+    display_name = "DMA 直接委托"
 
     default_setting = {
         "vt_symbol": "",
         "gateway_name": "",
         "direction": [Direction.LONG.value, Direction.SHORT.value],
+        "order_type": [
+            OrderType.MARKET.value, 
+            OrderType.LIMIT.value,
+            OrderType.STOP.value,
+            OrderType.FAK.value,
+            OrderType.FOK.value
+        ],
         "price": 0.0,
         "volume": 0.0,
         "offset": [
@@ -27,7 +34,8 @@ class SniperAlgo(AlgoTemplate):
 
     variables = [
         "traded",
-        "vt_orderid"
+        "vt_orderid",
+        "order_status",
     ]
 
     def __init__(
@@ -35,7 +43,7 @@ class SniperAlgo(AlgoTemplate):
         algo_engine: BaseEngine,
         algo_name: str,
         setting: dict,
-        gateway_name: str = None
+        gateway_name=None
     ):
         """"""
         super().__init__(algo_engine, algo_name, setting, gateway_name)
@@ -43,6 +51,7 @@ class SniperAlgo(AlgoTemplate):
         # Parameters
         self.vt_symbol = setting["vt_symbol"]
         self.direction = Direction(setting["direction"])
+        self.order_type = OrderType(setting["order_type"])
         self.price = setting["price"]
         self.volume = setting["volume"]
         self.offset = Offset(setting["offset"])
@@ -50,6 +59,7 @@ class SniperAlgo(AlgoTemplate):
         # Variables
         self.vt_orderid = ""
         self.traded = 0
+        self.order_status = ""
 
         self.subscribe(self.vt_symbol)
         self.put_parameters_event()
@@ -57,47 +67,35 @@ class SniperAlgo(AlgoTemplate):
 
     def on_tick(self, tick: TickData):
         """"""
-        if self.vt_orderid:
-            self.cancel_all()
-            return
-
-        if self.direction == Direction.LONG:
-            if tick.ask_price_1 <= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.ask_volume_1)
-
+        if not self.vt_orderid:
+            if self.direction == Direction.LONG:
                 self.vt_orderid = self.buy(
                     self.vt_symbol,
                     self.price,
-                    order_volume,
-                    offset=self.offset
+                    self.volume,
+                    self.order_type,
+                    self.offset
                 )
-        else:
-            if tick.bid_price_1 >= self.price:
-                order_volume = self.volume - self.traded
-                order_volume = min(order_volume, tick.bid_volume_1)
-
+                
+            else:
                 self.vt_orderid = self.sell(
                     self.vt_symbol,
                     self.price,
-                    order_volume,
-                    offset=self.offset
+                    self.volume,
+                    self.order_type,
+                    self.offset
                 )
-
         self.put_variables_event()
 
     def on_order(self, order: OrderData):
         """"""
+        self.traded = order.traded
+        self.order_status = order.status
+
         if not order.is_active():
-            self.vt_orderid = ""
-            self.put_variables_event()
+            self.stop()
+        self.put_variables_event()
 
     def on_trade(self, trade: TradeData):
         """"""
-        self.traded += trade.volume
-
-        if self.traded >= self.volume:
-            self.write_log(f"已交易数量：{self.traded}，总数量：{self.volume}")
-            self.stop()
-        else:
-            self.put_variables_event()
+        pass   

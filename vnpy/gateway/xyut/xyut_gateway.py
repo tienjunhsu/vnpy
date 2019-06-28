@@ -35,7 +35,7 @@ EXCHANGE_QUOTE2VT = {
 }
 
 
-class QuoteGateway(BaseGateway):
+class XyutGateway(BaseGateway):
     """provide universe quote"""
 
     default_setting = {
@@ -46,9 +46,9 @@ class QuoteGateway(BaseGateway):
 
     exchanges = list(EXCHANGE_QUOTE2VT.values())
 
-    def __init__(self, event_engine, gateway_name='quote'):
+    def __init__(self, event_engine, gateway_name='xyut'):
         """Constructor"""
-        super(QuoteGateway, self).__init__(event_engine, gateway_name)
+        super(XyutGateway, self).__init__(event_engine, gateway_name)
         self.live = False
         self.is_connected = False
         self.quote_plate = dict()

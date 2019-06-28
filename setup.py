@@ -159,6 +159,7 @@ setup(
         "*.dll",
         "*.so",
         "*.pyd",
+        "*.pem",
     ]},
     install_requires=install_requires,
     classifiers=[

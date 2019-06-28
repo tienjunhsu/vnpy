@@ -40,6 +40,7 @@ class TickData(BaseData):
     last_volume: float = 0
     limit_up: float = 0
     limit_down: float = 0
+    amount: float = 0
 
     open_price: float = 0
     high_price: float = 0
@@ -185,7 +186,11 @@ class PositionData(BaseData):
     def __post_init__(self):
         """"""
         self.vt_symbol = f"{self.symbol}.{self.exchange.value}"
-        self.vt_positionid = f"{self.vt_symbol}.{self.direction}"
+        # # # mod by hsu
+        # # for multi account support
+        # self.vt_positionid = f"{self.vt_symbol}.{self.direction}"
+        self.vt_positionid = f"{self.gateway_name}.{self.vt_symbol}.{self.direction}"
+        # # # end mod by hsu
 
 
 @dataclass
@@ -203,7 +208,12 @@ class AccountData(BaseData):
     def __post_init__(self):
         """"""
         self.available = self.balance - self.frozen
-        self.vt_accountid = f"{self.gateway_name}.{self.accountid}"
+        # # # mod by hsu
+        # # gateway_name is the unique identification of the account
+        # # directly set vt_accountid as the gateway_name
+        # self.vt_accountid = f"{self.gateway_name}.{self.accountid}"
+        self.vt_accountid = f"{self.gateway_name}"
+        # # # end mod by hsu
 
 
 @dataclass
