@@ -128,7 +128,7 @@ class HbsdmGateway(BaseGateway):
 
     def __init__(self, event_engine):
         """Constructor"""
-        super().__init__(event_engine, "HBDM")
+        super().__init__(event_engine, "HBSDM")
 
         self.rest_api = HbdmRestApi(self)
         self.trade_ws_api = HbdmTradeWebsocketApi(self)
