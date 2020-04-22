@@ -1,1 +1,0 @@
-from .zxjtma_gateway import ZxjtmaGateway
