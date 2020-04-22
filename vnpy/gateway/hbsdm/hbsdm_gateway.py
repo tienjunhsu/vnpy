@@ -516,6 +516,9 @@ class HbdmRestApi(RestClient):
                 gateway_name=self.gateway_name,
             )
 
+            for k, v in d.items():
+                account.__dict__[k] = v
+
             self.gateway.on_account(account)
 
     def on_query_position(self, data, request):

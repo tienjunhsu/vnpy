@@ -499,6 +499,40 @@ class HbdmRestApi(RestClient):
             extra=req
         )
 
+    def send_trigger_order(self, req: OrderRequest):
+        """计划委托下单"""
+        local_orderid = self.new_local_orderid()
+        order = req.create_order_data(
+            local_orderid,
+            self.gateway_name
+        )
+        order.time = datetime.now().strftime("%H:%M:%S")
+
+        data = {
+            "contract_code": req.symbol,
+            "trigger_type": req.__dict__["trigger_type"],
+            "trigger_price": req.__dict__["trigger_price"],
+            "order_price": req.price,
+            "volume": int(req.volume),
+            "direction": DIRECTION_VT2HBDM.get(req.direction, ""),
+            "offset": OFFSET_VT2HBDM.get(req.offset, ""),
+            "order_price_type": ORDERTYPE_VT2HBDM.get(req.type, ""),
+            "lever_rate": 20
+        }
+
+        self.add_request(
+            method="POST",
+            path="/api/v1/contract_trigger_order",
+            callback=self.on_send_trigger_order,
+            data=data,
+            extra=order,
+            on_error=self.on_send_trigger_order_error,
+            on_failed=self.on_send__trigger_order_failed
+        )
+
+        self.gateway.on_order(order)
+        return order.vt_orderid
+
     def on_query_account(self, data, request):
         """"""
         if self.check_error(data, "查询账户"):
@@ -511,6 +545,9 @@ class HbdmRestApi(RestClient):
                 frozen=d["margin_frozen"],
                 gateway_name=self.gateway_name,
             )
+            for k, v in d.items():
+                if k not in account.__dict__:
+                    account.__dict__[k] = v
 
             self.gateway.on_account(account)
 
@@ -543,6 +580,10 @@ class HbdmRestApi(RestClient):
             position.frozen = d["frozen"]
             position.price = d["cost_hold"]
             position.pnl = d["profit"]
+
+            for k, v in d.items():
+                if k not in position.__dict__:
+                    position.__dict__[k] = v
 
         for position in self.positions.values():
             self.gateway.on_position(position)
@@ -632,6 +673,48 @@ class HbdmRestApi(RestClient):
         """
         Callback when sending order caused exception.
         """
+        order = request.extra
+        order.status = Status.REJECTED
+        self.gateway.on_order(order)
+
+        # Record exception if not ConnectionError
+        if not issubclass(exception_type, ConnectionError):
+            self.on_error(exception_type, exception_value, tb, request)
+
+    def on_send_trigger_order(self, data, request):
+        """"""
+        print('on_send_trigger_order')
+        print(data)
+        print(request.extra)
+        order = request.extra
+
+        if self.check_error(data, "委托"):
+            order.status = Status.REJECTED
+            self.gateway.on_order(order)
+
+    def on_send_trigger_order_failed(self, status_code: str, request: Request):
+        """
+        Callback when sending order failed on server.
+        """
+        print('on_send_trigger_order_failed')
+        print(status_code)
+        print(request.extra)
+        order = request.extra
+        order.status = Status.REJECTED
+        self.gateway.on_order(order)
+
+        msg = f"委托失败，状态码：{status_code}，信息：{request.response.text}"
+        self.gateway.write_log(msg)
+
+    def on_send_trigger_order_error(
+        self, exception_type: type, exception_value: Exception, tb, request: Request
+    ):
+        """
+        Callback when sending order caused exception.
+        """
+        print('on_send_trigger_order_error')
+        print(exception_type, exception_value)
+        print(request.extra)
         order = request.extra
         order.status = Status.REJECTED
         self.gateway.on_order(order)
