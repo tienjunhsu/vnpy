@@ -12,6 +12,18 @@ from vnpy.gateway.hbsdm import HbsdmGateway
 from vnpy.app.cta_strategy import CtaStrategyApp
 from vnpy.app.cta_strategy.base import EVENT_CTA_LOG
 
+from vnpy.trader.constant import (
+    Direction,
+    Offset,
+    Exchange,
+    Product,
+    Status,
+    OrderType,
+    Interval
+)
+from vnpy.trader.object import (
+    OrderRequest,
+)
 
 SETTINGS["log.active"] = True
 SETTINGS["log.level"] = INFO
