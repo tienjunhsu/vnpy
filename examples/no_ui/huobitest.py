@@ -42,8 +42,8 @@ ctp_setting = {
 }
 
 hb_setting = {
-      "API Key": "76df2eb0-bg2hyw2dfg-82ab3208-c4c52",
-      "Secret Key": "63ab219c-86f9b563-7b90d3af-2595b", 
+      "API Key": "",
+      "Secret Key": "", 
       "会话数": 3, 
       "代理地址": "",  
       "代理端口": ""
